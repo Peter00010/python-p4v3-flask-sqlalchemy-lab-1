@@ -3,7 +3,7 @@
 
 from flask import Flask, make_response
 from flask_migrate import Migrate
-
+import json
 from models import db, Earthquake
 
 app = Flask(__name__)
@@ -21,7 +21,43 @@ def index():
     return make_response(body, 200)
 
 # Add views here
+@app.route('/earthquakes/<int:id>')
+def earthquakes_by_id(id):
+    earthquake = Earthquake.query.filter(Earthquake.id==id).first()
 
+    if earthquake:
+        body = {
+            'id': earthquake.id,
+            'location': earthquake.location,
+            'magnitude': earthquake.magnitude,
+            'year': earthquake.year
+        }
+        status=200
+    else:
+        body = {
+            'message': f'Earthquake {id} not found.'
+        }
+        status=404
+
+    return make_response(body,status)
+
+
+@app.route('/earthquakes/magnitude/<float:magnitude>')
+def earthquakes_by_matching_magnitude(magnitude):
+    quakes = Earthquake.query.filter(Earthquake.magnitude >= magnitude).all()
+    quake_list = [{
+        'id': quake.id,
+        'location': quake.location,
+        'magnitude': quake.magnitude,
+        'year': quake.year
+    } for quake in quakes]
+    response = {
+        'count': len(quakes),
+        'quakes': quake_list
+    }
+    body = json.dumps(response)
+    status = 200
+    return make_response(body, status)
 
 if __name__ == '__main__':
     app.run(port=5555, debug=True)
